@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -109,6 +109,18 @@
   const emailDataBtn = document.getElementById('emailDataBtn');
 
   let currentStudentsData = []; // will hold the latest loaded data
+
+  // Helper function to format date to mm/dd/yyyy
+  function formatDateMMDDYYYY(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date)) return dateStr; // fallback if invalid date
+    
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
+  }
 
   function updateDisplayName() {
     const firstName = firstNameInput.value.trim();
@@ -226,7 +238,7 @@
         <td>${student.osis_id || ''}</td>
         <td>${student.school_name || ''}</td>
         <td>${student.grade_level || ''}</td>
-        <td>${student.date_submitted || ''}</td>
+        <td>${formatDateMMDDYYYY(student.date_submitted)}</td>
         <td><button onclick="removeStudent(${student.ID})" id="removeStudentbutton">Remove</button></td>
       `;
       studentBody.appendChild(row);
@@ -245,7 +257,7 @@
     }
   }
 
-  // Export currentStudentsData as Excel file with date in filename
+  // Export currentStudentsData as Excel file with date formatted mm/dd/yyyy
   exportExcelBtn.addEventListener('click', () => {
     if (!currentStudentsData.length) {
       alert('No data to export.');
@@ -254,7 +266,7 @@
 
     const dateStr = new Date().toISOString().slice(0, 10);
 
-    // Map data for SheetJS (human readable keys)
+    // Map data for SheetJS (human readable keys), format date here
     const worksheetData = currentStudentsData.map(({ID, first_name, middle_name, last_name, osis_id, school_name, grade_level, date_submitted}) => ({
       ID,
       'First Name': first_name,
@@ -263,7 +275,7 @@
       'OSIS ID': osis_id,
       'School Name': school_name,
       'Grade Level': grade_level,
-      'Date': date_submitted
+      'Date': formatDateMMDDYYYY(date_submitted)
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -273,7 +285,7 @@
     XLSX.writeFile(workbook, `Attendance_List_${dateStr}.xlsx`);
   });
 
-  // Email Supabase data using mailto with date in subject and body
+  // Email Supabase data using mailto with date in subject and formatted date in body
   emailDataBtn.addEventListener('click', () => {
     if (!currentStudentsData.length) {
       alert('No data to email.');
@@ -284,7 +296,7 @@
 
     let emailBody = `Attendance List for ${dateStr}:\n\n`;
     currentStudentsData.forEach(({ID, first_name, middle_name, last_name, osis_id, school_name, grade_level, date_submitted}) => {
-      emailBody += `ID: ${ID}, Name: ${first_name} ${middle_name} ${last_name}, OSIS: ${osis_id}, School: ${school_name}, Grade: ${grade_level}, Date: ${date_submitted}\n`;
+      emailBody += `ID: ${ID}, Name: ${first_name} ${middle_name} ${last_name}, OSIS: ${osis_id}, School: ${school_name}, Grade: ${grade_level}, Date: ${formatDateMMDDYYYY(date_submitted)}\n`;
     });
 
     // Encode for URL
