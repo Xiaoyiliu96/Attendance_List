@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" type="text/css" href="css/style.css" />
+  <title>ATTENDANCE LIST</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- SheetJS for Excel export -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div id="wrap">
+  <div id="main_body">
+    <div id="fullname">
+      <img src="images/logos.png" height="65em" alt="Logo" />
+      <div id="fullname_title">Attendance</div>
+      <div id="fullname_title">Enter Your Name</div>
+
+      <div id="name"><label for="firstName">First Name:</label></div>
+      <div id="name"><input type="text" id="firstName" placeholder="Type your first name..." /></div>
+
+      <div id="name"><label for="middleName">Middle Name:</label></div>
+      <input type="text" id="middleName" placeholder="Middle Name" />
+
+      <div id="name"><label for="lastName">Last Name:</label></div>
+      <div id="name"><input type="text" id="lastName" placeholder="Type your last name..." /></div>
+
+      <div id="name"><label for="osisNumber">OSIS Number/Student ID:</label></div>
+      <div id="name"><input type="text" id="osisNumber" placeholder="OSIS Number (123456789 if unknown)" /></div>
+
+      <div id="name"><label>Grade Level (1–12):</label></div>
+      <input type="text" id="gradelevel" placeholder="Grade Level" /><br/>
+
+      <div id="name"><label>Your School:</label></div>
+      <div id="schoolCheckboxes">
+        <label><input type="checkbox" value="Mott Hall High School (Harlem)" /></label>
+        <span class="schoolname">Mott Hall High School (Harlem)</span>
+
+        <label><input type="checkbox" value="Eagle Academy for Young Men of Harlem" /></label> 
+        <span class="schoolname">Eagle Academy for Young Men of Harlem</span>
+
+        <label><input type="checkbox" value="Urban Assembly School of Global Commerce" /></label> 
+        <span class="schoolname">Urban Assembly School of Global Commerce</span>
+
+        <label><input type="checkbox" value="A. Philip Randolph" /></label>
+        <span class="schoolname">A. Philip Randolph</span>
+      </div>
+
+      <div id="name">
+        <button id="submitButton">Submit</button>
+      </div>
+
+      <div id="title2">Your name is:</div>
+      <span>(You can click the button to submit before checking that your name is correct)</span>
+      <div id="displayName">&nbsp;</div>
+    </div>
+
+    <div id="fullname2">
+      <div id="title3">Submitted Names:</div>
+
+      <table id="studentTable" style="display:none; border-collapse: collapse; width: 100%;">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>First Name</th>
+            <th>Middle Name</th>
+            <th>Last Name</th>
+            <th>OSIS ID</th>
+            <th>School Name</th>
+            <th>Grade Level</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="studentBody"></tbody>
+      </table>
+
+      <p>
+        <button id="exportExcelBtn">Export Table as Excel</button>
+      </p>
+      <p>
+        <button id="emailDataBtn">Email Supabase Data</button>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://cpnbxqfduxtdufhdkuig.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwbmJ4cWZkdXh0ZHVmaGRrdWlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMjg2MjEsImV4cCI6MjA2MzYwNDYyMX0.ipVyFBRyfV_HQjDCR-_wzK-LMTuw0UE3x59gVPOtf7A';
+
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const firstNameInput = document.getElementById('firstName');
+  const middleNameInput = document.getElementById('middleName');
+  const lastNameInput = document.getElementById('lastName');
+  const osisNumberInput = document.getElementById('osisNumber');
+  const gradeLevelInput = document.getElementById('gradelevel');
+  const schoolCheckboxes = document.querySelectorAll('#schoolCheckboxes input[type="checkbox"]');
+  const displayNameDiv = document.getElementById('displayName');
+  const submitButton = document.getElementById('submitButton');
+
+  const studentTable = document.getElementById('studentTable');
+  const studentBody = document.getElementById('studentBody');
+
+  const exportExcelBtn = document.getElementById('exportExcelBtn');
+  const emailDataBtn = document.getElementById('emailDataBtn');
+
+  let currentStudentsData = []; // will hold the latest loaded data
+
+  function updateDisplayName() {
+    const firstName = firstNameInput.value.trim();
+    const middleName = middleNameInput.value.trim();
+    const lastName = lastNameInput.value.trim();
+    const osisNumber = osisNumberInput.value.trim();
+    const gradeLevel = gradeLevelInput.value.trim();
+    const selectedSchools = Array.from(schoolCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+    displayNameDiv.textContent = `${firstName} ${middleName} ${lastName} OSIS: ${osisNumber} Grade Level: ${gradeLevel}${selectedSchools.length ? ' - ' + selectedSchools.join(', ') : ''}`;
+  }
+
+  [firstNameInput, middleNameInput, lastNameInput, osisNumberInput, gradeLevelInput].forEach(input => {
+    input.addEventListener('input', updateDisplayName);
+  });
+
+  async function saveToSupabase(data) {
+    const { error } = await client.from('students').insert([data]);
+    if (error) {
+      console.error('Supabase error:', error);
+      alert('Error saving to Supabase.');
+      return false;
+    } else {
+      console.log('Saved to Supabase.');
+      return true;
+    }
+  }
+
+  submitButton.addEventListener('click', async () => {
+    const firstName = firstNameInput.value.trim();
+    const middleName = middleNameInput.value.trim();
+    const lastName = lastNameInput.value.trim();
+    const osisNumber = osisNumberInput.value.trim();
+    const gradeLevel = gradeLevelInput.value.trim();
+    const selectedSchools = Array.from(schoolCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+    if (!firstName || !lastName || !osisNumber || !gradeLevel || selectedSchools.length === 0) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    if (osisNumber.length !== 9 || isNaN(osisNumber)) {
+      alert('OSIS number must be a 9-digit number.');
+      return;
+    }
+
+    const grade = parseInt(gradeLevel, 10);
+    if (isNaN(grade) || grade < 1 || grade > 12) {
+      alert('Grade level must be between 1 and 12.');
+      return;
+    }
+
+    // Check if OSIS number already exists in DB
+    const { data: existing, error: checkError } = await client
+      .from('students')
+      .select('osis_id')
+      .eq('osis_id', osisNumber);
+
+    if (checkError) {
+      alert('Error checking OSIS number uniqueness.');
+      console.error(checkError);
+      return;
+    }
+
+    if (existing && existing.length > 0) {
+      alert('This OSIS number has already been used. Please check your entry.');
+      return;
+    }
+
+    const dbData = {
+      first_name: firstName,
+      middle_name: middleName,
+      last_name: lastName,
+      osis_id: osisNumber,
+      grade_level: grade,
+      school_name: selectedSchools.join(', ')
+      // No date_submitted here, DB handles it automatically
+    };
+
+    const success = await saveToSupabase(dbData);
+    if (!success) return;
+
+    alert('Saved successfully!');
+
+    [firstNameInput, middleNameInput, lastNameInput, osisNumberInput, gradeLevelInput].forEach(input => input.value = '');
+    schoolCheckboxes.forEach(cb => cb.checked = false);
+    displayNameDiv.textContent = '';
+
+    loadStudents();
+  });
+
+  async function loadStudents() {
+    const { data, error } = await client.from('students').select('*').order('ID', { ascending: true });
+    studentBody.innerHTML = '';
+
+    if (error) {
+      alert('Error loading data: ' + JSON.stringify(error));
+      return;
+    }
+
+    currentStudentsData = data || [];
+
+    if (!data.length) {
+      studentBody.innerHTML = '<tr><td colspan="9">No data found.</td></tr>';
+      studentTable.style.display = 'table';
+      return;
+    }
+
+    data.forEach(student => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${student.ID}</td>
+        <td>${student.first_name || ''}</td>
+        <td>${student.middle_name || ''}</td>
+        <td>${student.last_name || ''}</td>
+        <td>${student.osis_id || ''}</td>
+        <td>${student.school_name || ''}</td>
+        <td>${student.grade_level || ''}</td>
+        <td>${student.date_submitted || ''}</td>
+        <td><button onclick="removeStudent(${student.ID})" id="removeStudentbutton">Remove</button></td>
+      `;
+      studentBody.appendChild(row);
+    });
+
+    studentTable.style.display = 'table';
+  }
+
+  async function removeStudent(id) {
+    if (!confirm(`Are you sure you want to delete student ID ${id}?`)) return;
+    const { error } = await client.from('students').delete().eq('ID', id);
+    if (error) {
+      alert('Failed to delete: ' + JSON.stringify(error));
+    } else {
+      loadStudents();
+    }
+  }
+
+  // Export currentStudentsData as Excel file with date in filename
+  exportExcelBtn.addEventListener('click', () => {
+    if (!currentStudentsData.length) {
+      alert('No data to export.');
+      return;
+    }
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+
+    // Map data for SheetJS (human readable keys)
+    const worksheetData = currentStudentsData.map(({ID, first_name, middle_name, last_name, osis_id, school_name, grade_level, date_submitted}) => ({
+      ID,
+      'First Name': first_name,
+      'Middle Name': middle_name,
+      'Last Name': last_name,
+      'OSIS ID': osis_id,
+      'School Name': school_name,
+      'Grade Level': grade_level,
+      'Date': date_submitted
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
+
+    XLSX.writeFile(workbook, `Attendance_List_${dateStr}.xlsx`);
+  });
+
+  // Email Supabase data using mailto with date in subject and body
+  emailDataBtn.addEventListener('click', () => {
+    if (!currentStudentsData.length) {
+      alert('No data to email.');
+      return;
+    }
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+
+    let emailBody = `Attendance List for ${dateStr}:\n\n`;
+    currentStudentsData.forEach(({ID, first_name, middle_name, last_name, osis_id, school_name, grade_level, date_submitted}) => {
+      emailBody += `ID: ${ID}, Name: ${first_name} ${middle_name} ${last_name}, OSIS: ${osis_id}, School: ${school_name}, Grade: ${grade_level}, Date: ${date_submitted}\n`;
+    });
+
+    // Encode for URL
+    const mailtoLink = `mailto:?subject=Attendance List - ${dateStr}&body=${encodeURIComponent(emailBody)}`;
+    window.location.href = mailtoLink;
+  });
+
+  window.removeStudent = removeStudent; // expose for inline onclick
+
+  window.addEventListener('DOMContentLoaded', () => {
+    loadStudents();
+  });
+</script>
+
+</body>
+</html>

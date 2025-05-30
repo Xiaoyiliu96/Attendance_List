@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <title>Name Submission</title>
+</head>  
+<body>
+
+<div id="wrap">
+     <div id="main_body">
+ 
+             <div id="fullname">
+                 <!---<div id="logo">&nbsp;</div>--->
+                 <img src="images/logos.png" height="65em" >
+                 <div id="fullname_title">Attendance</div>
+                <div id="fullname_title">Enter Your Name</div>
+
+                 <div id="name">
+                     <label for="firstName">First Name:</label>
+                 </div>
+                 <div id="name">
+                     <input type="text" id="firstName" placeholder="Type your first name...">
+                 </div>
+
+
+                  <div id="name">
+                     <label for="middleName">Middle Name:</label>
+                 </div>
+                 <input type="text" id="middleName" placeholder="Middle Name" />
+
+
+                 <div id="name">
+                     <label for="lastName">Last Name:</label>
+                 </div>
+                 <div id="name">
+                     <input type="text" id="lastName" placeholder="Type your last name...">
+                 </div>
+
+                 <div id="name">
+                     <label for="osisnumber">OSIS Number/Studnet ID:</label>
+                 </div>
+                 <div id="name">
+                     <input type="text" id="osisNumber" placeholder="OSIS Number" />
+
+                 </div>
+
+                 <div id="name">
+                     <label for="osisnumber">Your School:</label>
+                 </div>
+
+                 <div id="schoolCheckboxes">
+                    <label><input type="checkbox" value="Mott Hall High School (Harlem)" /></label>
+                    <span class="schoolname">Mott Hall High School (Harlem)</span>
+
+                    <label><input type="checkbox" value="Eagle Academy for Young Men of Harlem" /> </label> 
+                    <span class="schoolname">Eagle Academy for Young Men of Harlem</span>
+
+                    <label><input type="checkbox" value="Urban Assembly School of Global Commerce" /></label> 
+                    <span class="schoolname">Urban Assembly School of Global Commerce</span>
+
+                    <label><input type="checkbox" value="A. Philip Randolph" /></label>
+                    <span class="schoolname">A. Philip Randolph</span>
+                </div>
+
+
+
+
+
+                 <div id="name">
+                     <button id="submitButton">Submit</button>
+                 </div>
+
+                 <div id="title2">Your name is:</div>
+                 <span>(You can click the button to submit before checking that your name is correct)</span>
+                 <div id="displayName">&nbsp;</div>
+             </div>
+
+             <div id="fullname2">
+                 <div id="title3">Submitted Names:</div>
+                 <ul id="submittedNamesList"></ul>
+                 <button id="saveButton">Save Submitted Names as Text File</button>
+                 <button id="emailButton"><a href="mailto:xiaoyiliu96xyl@gmail.com">Save Submitted Names as Email</a>
+                 </button>
+             </div>
+         </div>
+     </div>
+ </div>
+    <script type="text/javascript" src="js/file-saver.js"></script>
+</body>
+</html>

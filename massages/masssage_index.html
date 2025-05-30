@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="style/style.css">
+    <title>Message Submission</title>
+</head>
+<body>
+    <h1>Enter your message</h1>
+    <textarea id="userMessage" rows="4" cols="50" placeholder="Type your message..."></textarea><br>
+    <button id="submitButton">Submit Message</button>
+    <button id="saveButton">Save Submitted Messages as Text File</button>
+
+    <h2>Your Message:</h2>
+    <div id="displayMessage" style="border: 1px solid #ccc; padding: 10px; margin-top: 10px; min-height: 50px;"></div>
+
+    <h2>Submitted Messages:</h2>
+    <ul id="submittedMessagesList"></ul>
+
+    <script>
+        const userMessageInput = document.getElementById('userMessage');
+        const displayMessageDiv = document.getElementById('displayMessage');
+        const submitButton = document.getElementById('submitButton');
+        const saveButton = document.getElementById('saveButton');
+        const submittedMessagesList = document.getElementById('submittedMessagesList');
+
+        // Load submitted messages from localStorage
+        let submittedMessages = JSON.parse(localStorage.getItem('submittedMessages')) || [];
+
+        // Function to render messages
+        function renderMessages() {
+            submittedMessagesList.innerHTML = ''; // Clear current list
+            submittedMessages.forEach((message, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${index + 1}: ${message}`; // Add index number before the message
+
+                // Create a remove button
+                const removeButton = document.createElement('button');
+                removeButton.textContent = 'Remove';
+                removeButton.onclick = () => removeMessage(index);
+
+                li.appendChild(removeButton);
+                submittedMessagesList.appendChild(li);
+            });
+        }
+
+        // Initial render of messages
+        renderMessages();
+
+        // Update displayed message as the user types
+        userMessageInput.addEventListener('input', function() {
+            displayMessageDiv.textContent = userMessageInput.value;
+        });
+
+        // Submit message functionality
+        submitButton.addEventListener('click', function() {
+            const message = userMessageInput.value.trim();
+
+            if (message === '') {
+                alert('Please enter a message to submit.');
+                return;
+            }
+
+            // Add message to the array
+            submittedMessages.push(message);
+            localStorage.setItem('submittedMessages', JSON.stringify(submittedMessages)); // Save to localStorage
+
+            // Clear the textarea and display area after submitting
+            userMessageInput.value = '';
+            displayMessageDiv.textContent = '';
+
+            // Re-render messages
+            renderMessages();
+        });
+
+        // Function to remove a message
+        function removeMessage(index) {
+            submittedMessages.splice(index, 1); // Remove the message from the array
+            localStorage.setItem('submittedMessages', JSON.stringify(submittedMessages)); // Update localStorage
+            renderMessages(); // Re-render messages
+        }
+
+        // Save submitted messages as a text file
+        saveButton.addEventListener('click', function() {
+            if (submittedMessages.length === 0) {
+                alert('No messages to save.');
+                return;
+            }
+
+            // Join submitted messages into a single string with line breaks
+            const messagesToSave = submittedMessages.join('\n');
+
+            // Create a Blob from the messages
+            const blob = new Blob([messagesToSave], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+
+            // Create a link element and trigger a download
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'submitted_messages.txt'; // Name of the downloaded file
+            document.body.appendChild(a);
+            a.click();
+
+            // Clean up
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>

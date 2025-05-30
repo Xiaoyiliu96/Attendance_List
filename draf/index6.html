@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Attendance Submission</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    input[type="text"] { width: 300px; margin-bottom: 10px; padding: 5px; }
+    #schoolCheckboxes label { display: block; margin: 5px 0; }
+    #submittedNamesList li { margin-bottom: 5px; }
+    button { margin: 5px; padding: 5px 10px; }
+  </style>
+</head>
+<body>
+
+  <h2>Attendance - Enter Your Name</h2>
+
+  <label>First Name:</label><br/>
+  <input type="text" id="firstName" placeholder="First Name" /><br/>
+
+  <label>Middle Name:</label><br/>
+  <input type="text" id="middleName" placeholder="Middle Name" /><br/>
+
+  <label>Last Name:</label><br/>
+  <input type="text" id="lastName" placeholder="Last Name" /><br/>
+
+  <label>OSIS Number:</label><br/>
+  <input type="text" id="osisNumber" placeholder="123456789" /><br/>
+
+  <label>Grade Level (1–12):</label><br/>
+  <input type="text" id="gradelevel" placeholder="Grade Level" /><br/>
+
+  <label>Your School:</label>
+  <div id="schoolCheckboxes">
+    <label><input type="checkbox" value="Mott Hall High School (Harlem)" /> Mott Hall High School (Harlem)</label>
+    <label><input type="checkbox" value="Eagle Academy for Young Men of Harlem" /> Eagle Academy for Young Men of Harlem</label>
+    <label><input type="checkbox" value="Urban Assembly School of Global Commerce" /> Urban Assembly School of Global Commerce</label>
+    <label><input type="checkbox" value="A. Philip Randolph" /> A. Philip Randolph</label>
+  </div>
+
+  <button id="submitButton">Submit</button>
+
+  <h3>Live Preview:</h3>
+  <div id="displayName">&nbsp;</div>
+
+  <h3>Submitted Names:</h3>
+  <ul id="submittedNamesList"></ul>
+  <button id="saveButton">Save as Text File</button>
+  <button id="emailButton">Email Names</button>
+
+  <script>
+    // Supabase credentials
+const SUPABASE_URL = 'https://cpnbxqfduxtdufhdkuig.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwbmJ4cWZkdXh0ZHVmaGRrdWlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMjg2MjEsImV4cCI6MjA2MzYwNDYyMX0.ipVyFBRyfV_HQjDCR-_wzK-LMTuw0UE3x59gVPOtf7A';
+
+
+    // DOM elements
+    const firstNameInput = document.getElementById('firstName');
+    const middleNameInput = document.getElementById('middleName');
+    const lastNameInput = document.getElementById('lastName');
+    const osisNumberInput = document.getElementById('osisNumber');
+    const gradeLevelInput = document.getElementById('gradelevel');
+    const schoolCheckboxes = document.querySelectorAll('#schoolCheckboxes input[type="checkbox"]');
+    const displayNameDiv = document.getElementById('displayName');
+    const submitButton = document.getElementById('submitButton');
+    const saveButton = document.getElementById('saveButton');
+    const emailButton = document.getElementById('emailButton');
+    const submittedNamesList = document.getElementById('submittedNamesList');
+
+    // Load from localStorage
+    let submittedNames = JSON.parse(localStorage.getItem('submittedNames')) || [];
+
+    function renderNames() {
+      submittedNamesList.innerHTML = '';
+      submittedNames.forEach((entry, index) => {
+        const li = document.createElement('li');
+        li.textContent = `${index + 1}: ${entry}`;
+        const removeButton = document.createElement('button');
+        removeButton.textContent = 'Remove';
+        removeButton.onclick = () => removeName(index);
+        li.appendChild(removeButton);
+        submittedNamesList.appendChild(li);
+      });
+    }
+
+    function updateDisplayName() {
+      const firstName = firstNameInput.value.trim();
+      const middleName = middleNameInput.value.trim();
+      const lastName = lastNameInput.value.trim();
+      const osisNumber = osisNumberInput.value.trim();
+      const gradeLevel = gradeLevelInput.value.trim();
+      const selectedSchools = Array.from(schoolCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+      displayNameDiv.textContent = `${firstName} ${middleName} ${lastName} OSIS: ${osisNumber} Grade Level: ${gradeLevel}${selectedSchools.length ? ' - ' + selectedSchools.join(', ') : ''}`;
+    }
+
+    [firstNameInput, middleNameInput, lastNameInput, osisNumberInput, gradeLevelInput].forEach(input => {
+      input.addEventListener('input', updateDisplayName);
+    });
+
+    function removeName(index) {
+      submittedNames.splice(index, 1);
+      localStorage.setItem('submittedNames', JSON.stringify(submittedNames));
+      renderNames();
+    }
+
+    async function saveToSupabase(data) {
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/students`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal'
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) throw new Error(await response.text());
+        console.log('Saved to Supabase.');
+      } catch (error) {
+        console.error('Supabase error:', error);
+        alert('Error saving to Supabase.');
+      }
+    }
+
+    submitButton.addEventListener('click', async () => {
+      const firstName = firstNameInput.value.trim();
+      const middleName = middleNameInput.value.trim();
+      const lastName = lastNameInput.value.trim();
+      const osisNumber = osisNumberInput.value.trim();
+      const gradeLevel = gradeLevelInput.value.trim();
+      const selectedSchools = Array.from(schoolCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+      if (!firstName || !lastName || !osisNumber || !gradeLevel || selectedSchools.length === 0) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+
+      if (osisNumber.length !== 9 || isNaN(osisNumber)) {
+        alert('OSIS number must be a 9-digit number.');
+        return;
+      }
+
+      const grade = parseInt(gradeLevel, 10);
+      if (isNaN(grade) || grade < 1 || grade > 12) {
+        alert('Grade level must be between 1 and 12.');
+        return;
+      }
+
+      const osisExists = submittedNames.some(entry => entry.includes(`OSIS: ${osisNumber}`));
+      if (osisExists) {
+        alert('This OSIS number has already been submitted.');
+        return;
+      }
+
+      const fullEntry = `${firstName}, ${middleName}, ${lastName}, OSIS: ${osisNumber}, Grade Level: ${grade} - ${selectedSchools.join(', ')}`;
+      submittedNames.push(fullEntry);
+      localStorage.setItem('submittedNames', JSON.stringify(submittedNames));
+      renderNames();
+
+      const dbData = {
+        first_name: firstName,
+        middle_name: middleName,
+        last_name: lastName,
+        osis_id: osisNumber,
+        grade_level: grade,
+        school_name: selectedSchools.join(', ')
+      };
+      await saveToSupabase(dbData);
+
+      [firstNameInput, middleNameInput, lastNameInput, osisNumberInput, gradeLevelInput].forEach(input => input.value = '');
+      schoolCheckboxes.forEach(cb => cb.checked = false);
+      displayNameDiv.textContent = '';
+    });
+
+    saveButton.addEventListener('click', () => {
+      if (submittedNames.length === 0) {
+        alert('No names to save.');
+        return;
+      }
+
+      const blob = new Blob([submittedNames.join('\n')], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'submitted_names.txt';
+      a.click();
+    });
+
+    emailButton.addEventListener('click', () => {
+      if (submittedNames.length === 0) {
+        alert('No names to email.');
+        return;
+      }
+
+      const subject = encodeURIComponent('Submitted Names');
+      const body = encodeURIComponent(submittedNames.join('\n'));
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    });
+
+    renderNames();
+  </script>
+
+</body>
+</html>

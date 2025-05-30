@@ -1,0 +1,143 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Attendance Form</title>
+  <link rel="stylesheet" type="text/css" href="css/style.css">
+</head>
+<body>
+
+
+<div id="wrap">
+     <div id="main_body">
+ 
+             <div id="fullname">
+                 <!---<div id="logo">&nbsp;</div>--->
+                 <img src="images/logos.png" height="65em" >
+                 <div id="fullname_title">Attendance</div>
+                <div id="fullname_title">Enter Your Name</div>
+
+                 <div id="name">
+                     <label for="firstName">First Name:</label>
+                 </div>
+                 <div id="name">
+                     <input type="text" id="firstName" placeholder="Type your first name...">
+                 </div>
+
+
+                  <div id="name">
+                     <label for="middleName">Middle Name:</label>
+                 </div>
+                 <input type="text" id="middleName" placeholder="Middle Name" />
+
+
+                 <div id="name">
+                     <label for="lastName">Last Name:</label>
+                 </div>
+                 <div id="name">
+                     <input type="text" id="lastName" placeholder="Type your last name...">
+                 </div>
+
+                 <div id="name">
+                     <label for="osisnumber (If you don't know, just type 1 to 9)" >OSIS Number/Studnet ID:</label>
+                 </div>
+                 <div id="name">
+                     <input type="text" id="osisNumber" placeholder="OSIS Number" />
+
+                 </div>
+                 <div id="name">
+                     <label for="gradeLevel">Grade Level (1-12):</label>
+  <input type="number" id="gradeLevel" placeholder="e.g., 9" min="1" max="12" />
+                 </div>
+
+                 <div id="name">
+                     <label for="osisnumber">Your School:</label>
+                 </div>
+
+                 <div id="schoolCheckboxes">
+                    <label><input type="checkbox" value="Mott Hall High School (Harlem)" /></label>
+                    <span class="schoolname">Mott Hall High School (Harlem)</span>
+
+                    <label><input type="checkbox" value="Eagle Academy for Young Men of Harlem" /> </label> 
+                    <span class="schoolname">Eagle Academy for Young Men of Harlem</span>
+
+                    <label><input type="checkbox" value="Urban Assembly School of Global Commerce" /></label> 
+                    <span class="schoolname">Urban Assembly School of Global Commerce</span>
+
+                    <label><input type="checkbox" value="A. Philip Randolph" /></label>
+                    <span class="schoolname">A. Philip Randolph</span>
+                </div>
+
+
+
+
+
+                 <div id="name">
+                     <button id="submitButton">Submit</button>
+                 </div>
+
+                 <div id="title2">Your name is:</div>
+                 <span>(You can click the button to submit before checking that your name is correct)</span>
+                 <div id="displayName">&nbsp;</div>
+             </div>
+
+             <div id="fullname2">
+                 <div id="title3">Submitted Names:</div>
+                 <ul id="submittedNamesList"></ul>
+                 <button id="saveButton">Save Submitted Names as Text File</button>
+                 <button id="emailButton"><a href="mailto:xiaoyiliu96xyl@gmail.com">Save Submitted Names as Email</a>
+                 </button>
+             </div>
+         </div>
+     </div>
+ </div>
+  
+<!---<script type="text/javascript" src="js/main.js"></script>--->
+
+<script>document.getElementById("emailButton").addEventListener("click", async () => {
+  const submittedNamesList = document.querySelectorAll("#submittedNamesList li");
+  if (submittedNamesList.length === 0) {
+    alert("No names to email.");
+    return;
+  }
+
+  const namesToEmail = [];
+  
+  for (const li of submittedNamesList) {
+    const text = li.textContent;
+
+    // Example format: "John M Doe | Grade: 10 | OSIS: 123456789 | School: XYZ High"
+    const match = text.match(/^(.*?)\s*\|\s*Grade:\s*(\d+)\s*\|\s*OSIS:\s*(\d+)\s*\|\s*School:\s*(.+)$/);
+    if (match) {
+      const [_, fullName, grade, osis, school] = match;
+      const nameParts = fullName.split(" ");
+      const firstName = nameParts[0] || "";
+      const middleName = nameParts.length === 3 ? nameParts[1] : "";
+      const lastName = nameParts.length === 3 ? nameParts[2] : nameParts[1] || "";
+
+      const data = {
+        first_name: firstName,
+        middle_name: middleName,
+        last_name: lastName,
+        osis_id: osis,
+        grade_level: Number(grade),
+        school_name: school
+      };
+
+      await saveToSupabase(data);
+      namesToEmail.push(text);
+    }
+  }
+
+  const subject = encodeURIComponent("Submitted Student Names");
+  const body = encodeURIComponent(namesToEmail.join("\n"));
+  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+});
+</script>
+
+ 
+</body>
+</html>
