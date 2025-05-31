@@ -6,7 +6,6 @@
   <link rel="stylesheet" type="text/css" href="css/style.css" />
   <title>ATTENDANCE LIST</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- SheetJS for Excel export -->
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -89,7 +88,7 @@
 
 <script>
   const SUPABASE_URL = 'https://cpnbxqfduxtdufhdkuig.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwbmJ4cWZkdXh0ZHVmaGRrdWlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMjg2MjEsImV4cCI6MjA2MzYwNDYyMX0.ipVyFBRyfV_HQjDCR-_wzK-LMTuw0UE3x59gVPOtf7A';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // shortened for safety
 
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -108,14 +107,12 @@
   const exportExcelBtn = document.getElementById('exportExcelBtn');
   const emailDataBtn = document.getElementById('emailDataBtn');
 
-  let currentStudentsData = []; // will hold the latest loaded data
+  let currentStudentsData = [];
 
-  // Helper function to format date to mm/dd/yyyy
   function formatDateMMDDYYYY(dateStr) {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    if (isNaN(date)) return dateStr; // fallback if invalid date
-    
+    if (isNaN(date)) return dateStr;
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
     const yyyy = date.getFullYear();
@@ -142,10 +139,8 @@
       console.error('Supabase error:', error);
       alert('Error saving to Supabase.');
       return false;
-    } else {
-      console.log('Saved to Supabase.');
-      return true;
     }
+    return true;
   }
 
   submitButton.addEventListener('click', async () => {
@@ -172,20 +167,18 @@
       return;
     }
 
-    // Check if OSIS number already exists in DB
     const { data: existing, error: checkError } = await client
       .from('students')
       .select('osis_id')
       .eq('osis_id', osisNumber);
 
     if (checkError) {
-      alert('Error checking OSIS number uniqueness.');
-      console.error(checkError);
+      alert('Error checking OSIS number.');
       return;
     }
 
     if (existing && existing.length > 0) {
-      alert('This OSIS number has already been used. Please check your entry.');
+      alert('This OSIS number has already been used.');
       return;
     }
 
@@ -196,18 +189,15 @@
       osis_id: osisNumber,
       grade_level: grade,
       school_name: selectedSchools.join(', ')
-      // No date_submitted here, DB handles it automatically
     };
 
     const success = await saveToSupabase(dbData);
     if (!success) return;
 
     alert('Saved successfully!');
-
     [firstNameInput, middleNameInput, lastNameInput, osisNumberInput, gradeLevelInput].forEach(input => input.value = '');
     schoolCheckboxes.forEach(cb => cb.checked = false);
     displayNameDiv.textContent = '';
-
     loadStudents();
   });
 
@@ -239,7 +229,7 @@
         <td>${student.school_name || ''}</td>
         <td>${student.grade_level || ''}</td>
         <td>${formatDateMMDDYYYY(student.date_submitted)}</td>
-        <td><button onclick="removeStudent(${student.ID})" id="removeStudentbutton">Remove</button></td>
+        <td><button onclick="removeStudent(${student.ID})">Remove</button></td>
       `;
       studentBody.appendChild(row);
     });
@@ -248,7 +238,16 @@
   }
 
   async function removeStudent(id) {
+    const password = prompt("Enter the admin password to delete this entry:");
+    const ADMIN_PASSWORD = "LpP"; 
+
+    if (password !== ADMIN_PASSWORD) {
+      alert("Incorrect password. Deletion canceled.");
+      return;
+    }
+
     if (!confirm(`Are you sure you want to delete student ID ${id}?`)) return;
+
     const { error } = await client.from('students').delete().eq('ID', id);
     if (error) {
       alert('Failed to delete: ' + JSON.stringify(error));
@@ -257,7 +256,6 @@
     }
   }
 
-  // Export currentStudentsData as Excel file with date formatted mm/dd/yyyy
   exportExcelBtn.addEventListener('click', () => {
     if (!currentStudentsData.length) {
       alert('No data to export.');
@@ -266,7 +264,6 @@
 
     const dateStr = new Date().toISOString().slice(0, 10);
 
-    // Map data for SheetJS (human readable keys), format date here
     const worksheetData = currentStudentsData.map(({ID, first_name, middle_name, last_name, osis_id, school_name, grade_level, date_submitted}) => ({
       ID,
       'First Name': first_name,
@@ -285,7 +282,6 @@
     XLSX.writeFile(workbook, `Attendance_List_${dateStr}.xlsx`);
   });
 
-  // Email Supabase data using mailto with date in subject and formatted date in body
   emailDataBtn.addEventListener('click', () => {
     if (!currentStudentsData.length) {
       alert('No data to email.');
@@ -293,18 +289,17 @@
     }
 
     const dateStr = new Date().toISOString().slice(0, 10);
-
     let emailBody = `Attendance List for ${dateStr}:\n\n`;
+
     currentStudentsData.forEach(({ID, first_name, middle_name, last_name, osis_id, school_name, grade_level, date_submitted}) => {
       emailBody += `ID: ${ID}, Name: ${first_name} ${middle_name} ${last_name}, OSIS: ${osis_id}, School: ${school_name}, Grade: ${grade_level}, Date: ${formatDateMMDDYYYY(date_submitted)}\n`;
     });
 
-    // Encode for URL
     const mailtoLink = `mailto:?subject=Attendance List - ${dateStr}&body=${encodeURIComponent(emailBody)}`;
     window.location.href = mailtoLink;
   });
 
-  window.removeStudent = removeStudent; // expose for inline onclick
+  window.removeStudent = removeStudent;
 
   window.addEventListener('DOMContentLoaded', () => {
     loadStudents();
